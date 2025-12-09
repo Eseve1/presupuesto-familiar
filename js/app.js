@@ -1,235 +1,179 @@
-// Firebase Configuration and App Initialization
+// app.js - Aplicación de Presupuesto Familiar
 
-// IMPORTANT: Replace these placeholder values with your actual Firebase credentials
-// See FIREBASE_SETUP.md for detailed instructions on how to get these values
-// DO NOT deploy to production with these placeholder values
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
+
 const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_PROJECT_ID.appspot.com",
-    messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-    appId: "YOUR_APP_ID"
+    apiKey: "AIzaSyAIqzMwqJ8hI-9AWFfWYLBHEa2kxmkEZk4",
+    authDomain: "presupuestofamiliar-b290f.firebaseapp.com",
+    projectId: "presupuestofamiliar-b290f",
+    storageBucket: "presupuestofamiliar-b290f.firebasestorage.app",
+    messagingSenderId: "909741248494",
+    appId: "1:909741248494:web:476c410df0ce06b80488ff"
 };
 
-// Initialize Firebase
-let app, auth, db;
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+
+// Variables globales
 let currentUser = null;
-let currentUserData = null;
+let presupuesto = 0;
+let gastos = [];
 
-try {
-    app = firebase.initializeApp(firebaseConfig);
-    auth = firebase.auth();
-    db = firebase.firestore();
-    console.log('Firebase initialized successfully');
-} catch (error) {
-    console.error('Error initializing Firebase:', error);
-    showToast('Error al inicializar Firebase. Por favor, configura tus credenciales.', 'error');
-}
+// Elementos del DOM
+const authSection = document.getElementById('auth-section');
+const appSection = document.getElementById('app-section');
+const loginForm = document.getElementById('login-form');
+const registerForm = document.getElementById('register-form');
+const showRegisterBtn = document.getElementById('show-register');
+const showLoginBtn = document.getElementById('show-login');
+const logoutBtn = document.getElementById('logout-btn');
+const presupuestoForm = document.getElementById('presupuesto-form');
+const gastoForm = document.getElementById('gasto-form');
+const gastosList = document.getElementById('gastos-list');
+const totalPresupuesto = document.getElementById('total-presupuesto');
+const totalGastos = document.getElementById('total-gastos');
+const saldoRestante = document.getElementById('saldo-restante');
 
-// Current month helper
-function getCurrentMonth() {
-    const now = new Date();
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-}
-
-// Currency formatter
-function formatCurrency(amount) {
-    return `Bs. ${parseFloat(amount).toLocaleString('es-BO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-}
-
-// Show toast notification
-function showToast(message, type = 'success') {
-    const toast = document.createElement('div');
-    toast.className = `toast ${type}`;
-    toast.innerHTML = `
-        <div class="flex items-center space-x-3">
-            <span class="text-xl">${type === 'success' ? '✅' : type === 'error' ? '❌' : '⚠️'}</span>
-            <p class="text-gray-800">${message}</p>
-        </div>
-    `;
-    document.body.appendChild(toast);
-    
-    setTimeout(() => {
-        toast.style.opacity = '0';
-        setTimeout(() => toast.remove(), 300);
-    }, 3000);
-}
-
-// Show/Hide Loading Overlay
-function showLoading() {
-    const overlay = document.getElementById('loadingOverlay');
-    if (overlay) {
-        overlay.classList.remove('hidden');
-    }
-}
-
-function hideLoading() {
-    const overlay = document.getElementById('loadingOverlay');
-    if (overlay) {
-        overlay.classList.add('hidden');
-    }
-}
-
-// Auth State Observer
-auth.onAuthStateChanged(async (user) => {
+// Autenticación
+onAuthStateChanged(auth, (user) => {
     if (user) {
         currentUser = user;
-        console.log('User logged in:', user.uid);
-        
-        // Load user data
-        try {
-            const userDoc = await db.collection('users').doc(user.uid).get();
-            if (userDoc.exists) {
-                currentUserData = userDoc.data();
-                
-                // Redirect to dashboard if on index page
-                if (window.location.pathname.endsWith('index.html') || window.location.pathname === '/') {
-                    window.location.href = 'dashboard.html';
-                }
-            }
-        } catch (error) {
-            console.error('Error loading user data:', error);
-        }
+        authSection.style.display = 'none';
+        appSection.style.display = 'block';
+        cargarDatos();
     } else {
         currentUser = null;
-        currentUserData = null;
-        
-        // Redirect to login if on dashboard page
-        if (window.location.pathname.includes('dashboard.html')) {
-            window.location.href = 'index.html';
-        }
+        authSection.style.display = 'block';
+        appSection.style.display = 'none';
     }
 });
 
-// Initialize dashboard if on dashboard page
-if (window.location.pathname.includes('dashboard.html')) {
-    document.addEventListener('DOMContentLoaded', () => {
-        initializeDashboard();
+loginForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = document.getElementById('login-email').value;
+    const password = document.getElementById('login-password').value;
+    
+    try {
+        await signInWithEmailAndPassword(auth, email, password);
+    } catch (error) {
+        alert('Error al iniciar sesión: ' + error.message);
+    }
+});
+
+registerForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = document.getElementById('register-email').value;
+    const password = document.getElementById('register-password').value;
+    
+    try {
+        await createUserWithEmailAndPassword(auth, email, password);
+    } catch (error) {
+        alert('Error al registrarse: ' + error.message);
+    }
+});
+
+showRegisterBtn.addEventListener('click', () => {
+    loginForm.parentElement.style.display = 'none';
+    registerForm.parentElement.style.display = 'block';
+});
+
+showLoginBtn.addEventListener('click', () => {
+    registerForm.parentElement.style.display = 'none';
+    loginForm.parentElement.style.display = 'block';
+});
+
+logoutBtn.addEventListener('click', () => {
+    signOut(auth);
+});
+
+// Gestión de presupuesto
+presupuestoForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    presupuesto = parseFloat(document.getElementById('presupuesto-input').value);
+    guardarDatos();
+    actualizarResumen();
+    presupuestoForm.reset();
+});
+
+// Gestión de gastos
+gastoForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    
+    const nombre = document.getElementById('gasto-nombre').value;
+    const cantidad = parseFloat(document.getElementById('gasto-cantidad').value);
+    
+    const gasto = {
+        id: Date.now(),
+        nombre,
+        cantidad,
+        fecha: new Date().toLocaleDateString()
+    };
+    
+    gastos.push(gasto);
+    guardarDatos();
+    actualizarGastos();
+    actualizarResumen();
+    gastoForm.reset();
+});
+
+function actualizarGastos() {
+    gastosList.innerHTML = '';
+    
+    gastos.forEach(gasto => {
+        const li = document.createElement('li');
+        li.innerHTML = `
+            <span>${gasto.nombre}</span>
+            <span>${gasto.fecha}</span>
+            <span>$${gasto.cantidad.toFixed(2)}</span>
+            <button onclick="eliminarGasto(${gasto.id})">Eliminar</button>
+        `;
+        gastosList.appendChild(li);
     });
 }
 
-async function initializeDashboard() {
-    showLoading();
-    
-    try {
-        // Wait for auth to be ready
-        await new Promise(resolve => {
-            const unsubscribe = auth.onAuthStateChanged(user => {
-                if (user) {
-                    unsubscribe();
-                    resolve();
-                }
-            });
-        });
-        
-        // Load user data
-        const userDoc = await db.collection('users').doc(currentUser.uid).get();
-        if (!userDoc.exists) {
-            throw new Error('User data not found');
-        }
-        
-        currentUserData = userDoc.data();
-        
-        // Update welcome message
-        const welcomeMsg = document.getElementById('userWelcome');
-        if (welcomeMsg) {
-            welcomeMsg.textContent = `Bienvenido, ${currentUserData.profile.name}`;
-        }
-        
-        // Check if user needs to select mode
-        if (!currentUserData.profile.mode) {
-            document.getElementById('modeSelectionModal').classList.remove('hidden');
-        } else {
-            // Apply theme
-            applyTheme(currentUserData.profile.mode);
-            
-            // Initialize dashboard components
-            await loadEnvelopes();
-            await loadTransactions();
-            updateDashboardSummary();
-            initializeChart();
-        }
-        
-        // Setup event listeners
-        setupDashboardEventListeners();
-        
-    } catch (error) {
-        console.error('Error initializing dashboard:', error);
-        showToast('Error al cargar el dashboard', 'error');
-    } finally {
-        hideLoading();
-    }
-}
+window.eliminarGasto = function(id) {
+    gastos = gastos.filter(gasto => gasto.id !== id);
+    guardarDatos();
+    actualizarGastos();
+    actualizarResumen();
+};
 
-function applyTheme(mode) {
-    const body = document.body;
-    const themeStylesheet = document.getElementById('themeStylesheet');
+function actualizarResumen() {
+    const total = gastos.reduce((sum, gasto) => sum + gasto.cantidad, 0);
+    const saldo = presupuesto - total;
     
-    body.classList.remove('adult-mode', 'kids-mode');
-    body.classList.add(`${mode}-mode`);
+    totalPresupuesto.textContent = `$${presupuesto.toFixed(2)}`;
+    totalGastos.textContent = `$${total.toFixed(2)}`;
+    saldoRestante.textContent = `$${saldo.toFixed(2)}`;
     
-    if (mode === 'kids') {
-        themeStylesheet.setAttribute('href', 'css/kids-theme.css');
+    if (saldo < 0) {
+        saldoRestante.style.color = '#e74c3c';
     } else {
-        themeStylesheet.setAttribute('href', 'css/adult-theme.css');
+        saldoRestante.style.color = '#27ae60';
     }
 }
 
-async function selectUserMode(mode) {
-    try {
-        showLoading();
-        
-        await db.collection('users').doc(currentUser.uid).update({
-            'profile.mode': mode
-        });
-        
-        currentUserData.profile.mode = mode;
-        
-        // Hide modal
-        document.getElementById('modeSelectionModal').classList.add('hidden');
-        
-        // Apply theme
-        applyTheme(mode);
-        
-        // Initialize dashboard
-        await loadEnvelopes();
-        await loadTransactions();
-        updateDashboardSummary();
-        initializeChart();
-        
-        showToast('Modo seleccionado correctamente', 'success');
-    } catch (error) {
-        console.error('Error selecting mode:', error);
-        showToast('Error al seleccionar modo', 'error');
-    } finally {
-        hideLoading();
+// Guardar y cargar datos
+function guardarDatos() {
+    if (currentUser) {
+        const datos = {
+            presupuesto,
+            gastos
+        };
+        localStorage.setItem(`presupuesto_${currentUser.uid}`, JSON.stringify(datos));
     }
 }
 
-function setupDashboardEventListeners() {
-    // Logout button
-    const logoutBtn = document.getElementById('logoutBtn');
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', async () => {
-            try {
-                await auth.signOut();
-                window.location.href = 'index.html';
-            } catch (error) {
-                console.error('Error signing out:', error);
-                showToast('Error al cerrar sesión', 'error');
-            }
-        });
-    }
-    
-    // Mode toggle button
-    const modeToggle = document.getElementById('modeToggle');
-    if (modeToggle) {
-        modeToggle.addEventListener('click', () => {
-            document.getElementById('modeSelectionModal').classList.remove('hidden');
-        });
+function cargarDatos() {
+    if (currentUser) {
+        const datos = localStorage.getItem(`presupuesto_${currentUser.uid}`);
+        if (datos) {
+            const { presupuesto: p, gastos: g } = JSON.parse(datos);
+            presupuesto = p || 0;
+            gastos = g || [];
+            actualizarGastos();
+            actualizarResumen();
+        }
     }
 }
-
-// Make selectUserMode globally accessible
-window.selectUserMode = selectUserMode;
