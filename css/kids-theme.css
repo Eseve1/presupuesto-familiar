@@ -1,0 +1,151 @@
+/* Kids Theme Styles */
+
+:root {
+    --kid-primary: #a855f7;
+    --kid-secondary: #ec4899;
+    --kid-accent: #fbbf24;
+    --kid-success: #10b981;
+    --kid-bg: #fef3c7;
+    --kid-card-bg: #ffffff;
+}
+
+body.kids-mode {
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 50%, #fcd34d 100%);
+    background-attachment: fixed;
+}
+
+body.kids-mode header {
+    background: linear-gradient(135deg, #a855f7 0%, #ec4899 100%);
+    color: white;
+}
+
+body.kids-mode #modeToggle {
+    background-color: #fbbf24;
+    color: #7c2d12;
+    font-weight: bold;
+}
+
+body.kids-mode #modeToggle:hover {
+    background-color: #f59e0b;
+}
+
+body.kids-mode .card,
+body.kids-mode .bg-white {
+    background-color: var(--kid-card-bg);
+    border-radius: 1.5rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 0 0 3px rgba(168, 85, 247, 0.1);
+}
+
+body.kids-mode .envelope-card {
+    border-left: 6px solid var(--kid-primary);
+    background: linear-gradient(to right, #faf5ff 0%, #ffffff 100%);
+}
+
+body.kids-mode .envelope-card:hover {
+    transform: translateY(-4px) scale(1.02);
+    box-shadow: 0 8px 16px rgba(168, 85, 247, 0.3);
+}
+
+body.kids-mode .btn-primary,
+body.kids-mode button[type="submit"] {
+    background: linear-gradient(135deg, #a855f7 0%, #ec4899 100%);
+    color: white;
+    font-weight: bold;
+    border: none;
+}
+
+body.kids-mode .btn-primary:hover,
+body.kids-mode button[type="submit"]:hover {
+    transform: scale(1.05);
+}
+
+/* Playful Typography */
+body.kids-mode h1, 
+body.kids-mode h2, 
+body.kids-mode h3 {
+    font-weight: 800;
+    color: #7c2d12;
+    text-shadow: 2px 2px 0px rgba(251, 191, 36, 0.3);
+}
+
+/* Fun Icons */
+body.kids-mode .text-2xl,
+body.kids-mode .text-3xl,
+body.kids-mode .text-4xl {
+    filter: drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+/* Colorful Progress Bars */
+body.kids-mode .bg-blue-600 {
+    background: linear-gradient(90deg, #3b82f6 0%, #8b5cf6 100%);
+}
+
+body.kids-mode .bg-purple-600 {
+    background: linear-gradient(90deg, #a855f7 0%, #ec4899 100%);
+}
+
+body.kids-mode .bg-green-600 {
+    background: linear-gradient(90deg, #10b981 0%, #34d399 100%);
+}
+
+/* Animated backgrounds */
+body.kids-mode .envelope-card {
+    position: relative;
+    overflow: hidden;
+}
+
+body.kids-mode .envelope-card::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(168, 85, 247, 0.1) 0%, transparent 70%);
+    animation: rotate 20s linear infinite;
+}
+
+@keyframes rotate {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Fun button animations */
+body.kids-mode button {
+    transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+body.kids-mode button:active {
+    transform: scale(0.95);
+}
+
+/* Larger, more friendly inputs */
+body.kids-mode input,
+body.kids-mode select {
+    font-size: 1.1rem;
+    border: 3px solid #e5e7eb;
+}
+
+body.kids-mode input:focus,
+body.kids-mode select:focus {
+    border-color: var(--kid-primary);
+    box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.2);
+}
+
+/* Celebration effects */
+@keyframes bounce {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+body.kids-mode .celebration {
+    animation: bounce 0.5s ease-in-out;
+}
