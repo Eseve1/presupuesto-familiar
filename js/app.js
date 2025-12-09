@@ -1,6 +1,8 @@
 // Firebase Configuration and App Initialization
 
-// Firebase configuration - Users need to replace with their own config
+// IMPORTANT: Replace these placeholder values with your actual Firebase credentials
+// See FIREBASE_SETUP.md for detailed instructions on how to get these values
+// DO NOT deploy to production with these placeholder values
 const firebaseConfig = {
     apiKey: "YOUR_API_KEY",
     authDomain: "YOUR_PROJECT_ID.firebaseapp.com",

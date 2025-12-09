@@ -86,8 +86,9 @@ document.addEventListener('DOMContentLoaded', () => {
         addTransactionBtn.addEventListener('click', () => {
             transactionModal.classList.remove('hidden');
             populateEnvelopeSelect();
-            // Set default date to today
-            document.getElementById('transactionDate').valueAsDate = new Date();
+            // Set default date to today (in local timezone)
+            const today = new Date();
+            document.getElementById('transactionDate').value = today.toISOString().split('T')[0];
         });
     }
     
