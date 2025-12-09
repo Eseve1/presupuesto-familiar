@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Presupuesto Familiar - Gestión Inteligente de Finanzas</title>
+    <link rel="stylesheet" href="css/main.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <header class="text-center mb-12">
+            <div class="flex items-center justify-center mb-4">
+                <span class="text-6xl">💰</span>
+            </div>
+            <h1 class="text-4xl font-bold text-gray-800 mb-2">Presupuesto Familiar</h1>
+            <p class="text-lg text-gray-600">Gestión inteligente con metodología Suiza/Alemana</p>
+        </header>
+
+        <!-- Main Content -->
+        <div class="max-w-md mx-auto">
+            <!-- Login/Register Card -->
+            <div id="authCard" class="bg-white rounded-2xl shadow-xl p-8">
+                <!-- Tab Selector -->
+                <div class="flex mb-6 bg-gray-100 rounded-lg p-1">
+                    <button id="loginTab" class="flex-1 py-2 rounded-md font-medium transition-all bg-white shadow-sm text-blue-600">
+                        Iniciar Sesión
+                    </button>
+                    <button id="registerTab" class="flex-1 py-2 rounded-md font-medium transition-all text-gray-600">
+                        Registrarse
+                    </button>
+                </div>
+
+                <!-- Login Form -->
+                <form id="loginForm" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Correo electrónico</label>
+                        <input type="email" id="loginEmail" required
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Contraseña</label>
+                        <input type="password" id="loginPassword" required
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                    <button type="submit" 
+                        class="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors">
+                        Entrar
+                    </button>
+                </form>
+
+                <!-- Register Form -->
+                <form id="registerForm" class="space-y-4 hidden">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Nombre completo</label>
+                        <input type="text" id="registerName" required
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Correo electrónico</label>
+                        <input type="email" id="registerEmail" required
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Contraseña</label>
+                        <input type="password" id="registerPassword" required minlength="6"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Ingreso mensual (Bs.)</label>
+                        <input type="number" id="registerIncome" required min="0" step="0.01"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                    <button type="submit"
+                        class="w-full bg-green-600 text-white py-3 rounded-lg font-medium hover:bg-green-700 transition-colors">
+                        Crear Cuenta
+                    </button>
+                </form>
+
+                <!-- Error Message -->
+                <div id="authError" class="mt-4 p-3 bg-red-100 text-red-700 rounded-lg hidden"></div>
+            </div>
+
+            <!-- Info Section -->
+            <div class="mt-8 bg-white rounded-xl shadow-lg p-6">
+                <h2 class="text-xl font-bold text-gray-800 mb-3">¿Qué es la metodología Suiza/Alemana?</h2>
+                <div class="space-y-3 text-gray-600">
+                    <div class="flex items-start">
+                        <span class="text-2xl mr-3">💼</span>
+                        <div>
+                            <strong class="text-gray-800">Sistema de Sobres:</strong>
+                            <p class="text-sm">Divide tu presupuesto en categorías virtuales</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start">
+                        <span class="text-2xl mr-3">📊</span>
+                        <div>
+                            <strong class="text-gray-800">Regla 50/30/20:</strong>
+                            <p class="text-sm">50% necesidades, 30% gastos personales, 20% ahorros</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start">
+                        <span class="text-2xl mr-3">🎯</span>
+                        <div>
+                            <strong class="text-gray-800">Disciplina y Metas:</strong>
+                            <p class="text-sm">Planifica antes de gastar y alcanza tus objetivos</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 flex flex-col items-center">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+            <p class="text-gray-700">Cargando...</p>
+        </div>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    
+    <!-- App Scripts -->
+    <script src="js/app.js"></script>
+    <script src="js/auth.js"></script>
+</body>
+</html>

@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Presupuesto Familiar</title>
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/adult-theme.css" id="themeStylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body class="bg-gray-50">
+    <!-- Header -->
+    <header class="bg-white shadow-sm sticky top-0 z-40">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <span class="text-3xl">💰</span>
+                    <div>
+                        <h1 class="text-xl font-bold text-gray-800">Presupuesto Familiar</h1>
+                        <p class="text-sm text-gray-600" id="userWelcome">Bienvenido</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button id="modeToggle" class="px-4 py-2 rounded-lg font-medium transition-colors">
+                        Cambiar Modo
+                    </button>
+                    <button id="logoutBtn" class="text-gray-600 hover:text-gray-800">
+                        <span class="text-xl">🚪</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="container mx-auto px-4 py-6">
+        <!-- Mode Selection Modal (First Time) -->
+        <div id="modeSelectionModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">
+            <div class="bg-white rounded-2xl p-8 max-w-lg w-full mx-4">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4 text-center">Selecciona tu modo de usuario</h2>
+                <p class="text-gray-600 text-center mb-6">Puedes cambiarlo en cualquier momento</p>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <button onclick="selectUserMode('adult')" class="p-6 border-2 border-gray-300 rounded-xl hover:border-blue-500 hover:bg-blue-50 transition-all">
+                        <div class="text-4xl mb-3">👔</div>
+                        <h3 class="font-bold text-lg mb-2">Modo Adulto</h3>
+                        <p class="text-sm text-gray-600">Análisis completo y profesional</p>
+                    </button>
+                    <button onclick="selectUserMode('kids')" class="p-6 border-2 border-gray-300 rounded-xl hover:border-purple-500 hover:bg-purple-50 transition-all">
+                        <div class="text-4xl mb-3">👶</div>
+                        <h3 class="font-bold text-lg mb-2">Modo Niños</h3>
+                        <p class="text-sm text-gray-600">Interfaz divertida y educativa</p>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dashboard Content -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+            <!-- Summary Cards -->
+            <div class="bg-white rounded-xl shadow-md p-6">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-gray-600 font-medium">Ingreso Mensual</span>
+                    <span class="text-2xl">💵</span>
+                </div>
+                <p class="text-3xl font-bold text-gray-800" id="totalIncome">Bs. 0</p>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-md p-6">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-gray-600 font-medium">Total Gastado</span>
+                    <span class="text-2xl">💸</span>
+                </div>
+                <p class="text-3xl font-bold text-red-600" id="totalSpent">Bs. 0</p>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-md p-6">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-gray-600 font-medium">Disponible</span>
+                    <span class="text-2xl">💰</span>
+                </div>
+                <p class="text-3xl font-bold text-green-600" id="totalAvailable">Bs. 0</p>
+            </div>
+        </div>
+
+        <!-- 50/30/20 Rule Section -->
+        <div class="bg-white rounded-xl shadow-md p-6 mb-6">
+            <h2 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                <span class="text-2xl mr-2">📊</span>
+                Regla 50/30/20
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="p-4 bg-blue-50 rounded-lg">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="font-medium text-blue-800">Necesidades (50%)</span>
+                        <span class="text-sm text-blue-600" id="needsPercentage">0%</span>
+                    </div>
+                    <p class="text-2xl font-bold text-blue-600" id="needsAmount">Bs. 0</p>
+                    <div class="mt-2 bg-blue-200 rounded-full h-2">
+                        <div id="needsProgress" class="bg-blue-600 h-2 rounded-full" style="width: 0%"></div>
+                    </div>
+                </div>
+                <div class="p-4 bg-purple-50 rounded-lg">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="font-medium text-purple-800">Personales (30%)</span>
+                        <span class="text-sm text-purple-600" id="personalPercentage">0%</span>
+                    </div>
+                    <p class="text-2xl font-bold text-purple-600" id="personalAmount">Bs. 0</p>
+                    <div class="mt-2 bg-purple-200 rounded-full h-2">
+                        <div id="personalProgress" class="bg-purple-600 h-2 rounded-full" style="width: 0%"></div>
+                    </div>
+                </div>
+                <div class="p-4 bg-green-50 rounded-lg">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="font-medium text-green-800">Ahorros (20%)</span>
+                        <span class="text-sm text-green-600" id="savingsPercentage">0%</span>
+                    </div>
+                    <p class="text-2xl font-bold text-green-600" id="savingsAmount">Bs. 0</p>
+                    <div class="mt-2 bg-green-200 rounded-full h-2">
+                        <div id="savingsProgress" class="bg-green-600 h-2 rounded-full" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Envelopes Section -->
+            <div class="lg:col-span-2">
+                <div class="bg-white rounded-xl shadow-md p-6 mb-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-bold text-gray-800 flex items-center">
+                            <span class="text-2xl mr-2">📨</span>
+                            Mis Sobres
+                        </h2>
+                        <button id="addEnvelopeBtn" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                            + Nuevo Sobre
+                        </button>
+                    </div>
+                    <div id="envelopesList" class="space-y-3">
+                        <!-- Envelopes will be dynamically added here -->
+                    </div>
+                </div>
+
+                <!-- Transactions Section -->
+                <div class="bg-white rounded-xl shadow-md p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-bold text-gray-800 flex items-center">
+                            <span class="text-2xl mr-2">📝</span>
+                            Transacciones Recientes
+                        </h2>
+                        <button id="addTransactionBtn" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                            + Nueva
+                        </button>
+                    </div>
+                    <div id="transactionsList" class="space-y-2">
+                        <!-- Transactions will be dynamically added here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Section -->
+            <div class="lg:col-span-1">
+                <div class="bg-white rounded-xl shadow-md p-6 mb-6">
+                    <h2 class="text-xl font-bold text-gray-800 mb-4">Distribución de Gastos</h2>
+                    <canvas id="expenseChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Envelope Modal -->
+    <div id="envelopeModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-2xl p-8 max-w-md w-full mx-4">
+            <h3 class="text-2xl font-bold text-gray-800 mb-4">Crear Sobre</h3>
+            <form id="envelopeForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Nombre del Sobre</label>
+                    <input type="text" id="envelopeName" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Categoría</label>
+                    <select id="envelopeCategory" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                        <option value="necesidades">Necesidades (50%)</option>
+                        <option value="personales">Gastos Personales (30%)</option>
+                        <option value="ahorro">Ahorros (20%)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Presupuesto Mensual (Bs.)</label>
+                    <input type="number" id="envelopeBudget" required min="0" step="0.01" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Icono</label>
+                    <div class="grid grid-cols-6 gap-2" id="iconSelector">
+                        <button type="button" class="icon-btn p-2 text-2xl hover:bg-gray-100 rounded" data-icon="🍽️">🍽️</button>
+                        <button type="button" class="icon-btn p-2 text-2xl hover:bg-gray-100 rounded" data-icon="🚗">🚗</button>
+                        <button type="button" class="icon-btn p-2 text-2xl hover:bg-gray-100 rounded" data-icon="🏠">🏠</button>
+                        <button type="button" class="icon-btn p-2 text-2xl hover:bg-gray-100 rounded" data-icon="💡">💡</button>
+                        <button type="button" class="icon-btn p-2 text-2xl hover:bg-gray-100 rounded" data-icon="🎮">🎮</button>
+                        <button type="button" class="icon-btn p-2 text-2xl hover:bg-gray-100 rounded" data-icon="👕">👕</button>
+                        <button type="button" class="icon-btn p-2 text-2xl hover:bg-gray-100 rounded" data-icon="💊">💊</button>
+                        <button type="button" class="icon-btn p-2 text-2xl hover:bg-gray-100 rounded" data-icon="📱">📱</button>
+                        <button type="button" class="icon-btn p-2 text-2xl hover:bg-gray-100 rounded" data-icon="✈️">✈️</button>
+                        <button type="button" class="icon-btn p-2 text-2xl hover:bg-gray-100 rounded" data-icon="🎓">🎓</button>
+                        <button type="button" class="icon-btn p-2 text-2xl hover:bg-gray-100 rounded" data-icon="💰">💰</button>
+                        <button type="button" class="icon-btn p-2 text-2xl hover:bg-gray-100 rounded" data-icon="🎁">🎁</button>
+                    </div>
+                    <input type="hidden" id="envelopeIcon" value="🍽️">
+                </div>
+                <div class="flex space-x-3">
+                    <button type="submit" class="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700">
+                        Crear
+                    </button>
+                    <button type="button" id="cancelEnvelope" class="flex-1 bg-gray-300 text-gray-700 py-2 rounded-lg hover:bg-gray-400">
+                        Cancelar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Transaction Modal -->
+    <div id="transactionModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-2xl p-8 max-w-md w-full mx-4">
+            <h3 class="text-2xl font-bold text-gray-800 mb-4">Nueva Transacción</h3>
+            <form id="transactionForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Tipo</label>
+                    <select id="transactionType" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                        <option value="expense">Gasto</option>
+                        <option value="income">Ingreso</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Monto (Bs.)</label>
+                    <input type="number" id="transactionAmount" required min="0" step="0.01" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div id="envelopeSelectionDiv">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Sobre</label>
+                    <select id="transactionEnvelope" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                        <!-- Options will be populated dynamically -->
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Descripción</label>
+                    <input type="text" id="transactionDescription" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Fecha</label>
+                    <input type="date" id="transactionDate" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div class="flex space-x-3">
+                    <button type="submit" class="flex-1 bg-green-600 text-white py-2 rounded-lg hover:bg-green-700">
+                        Guardar
+                    </button>
+                    <button type="button" id="cancelTransaction" class="flex-1 bg-gray-300 text-gray-700 py-2 rounded-lg hover:bg-gray-400">
+                        Cancelar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 flex flex-col items-center">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+            <p class="text-gray-700">Cargando...</p>
+        </div>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    
+    <!-- App Scripts -->
+    <script src="js/app.js"></script>
+    <script src="js/envelope-system.js"></script>
+    <script src="js/transaction-manager.js"></script>
+    <script src="js/analytics.js"></script>
+    <script src="js/utils.js"></script>
+</body>
+</html>

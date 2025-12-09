@@ -1,0 +1,66 @@
+/* Adult Theme Styles */
+
+:root {
+    --primary-color: #2563eb;
+    --secondary-color: #10b981;
+    --accent-color: #f59e0b;
+    --danger-color: #ef4444;
+    --bg-primary: #ffffff;
+    --bg-secondary: #f3f4f6;
+    --text-primary: #1f2937;
+    --text-secondary: #6b7280;
+}
+
+body.adult-mode {
+    background-color: var(--bg-secondary);
+}
+
+body.adult-mode header {
+    background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%);
+    color: white;
+}
+
+body.adult-mode #modeToggle {
+    background-color: white;
+    color: #2563eb;
+}
+
+body.adult-mode #modeToggle:hover {
+    background-color: #f3f4f6;
+}
+
+body.adult-mode .card {
+    background-color: var(--bg-primary);
+    border-radius: 1rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+body.adult-mode .envelope-card {
+    border-left: 4px solid var(--primary-color);
+}
+
+body.adult-mode .btn-primary {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+body.adult-mode .btn-primary:hover {
+    background-color: #1d4ed8;
+}
+
+/* Professional Chart Styling */
+body.adult-mode #expenseChart {
+    filter: none;
+}
+
+/* Clean and minimal design */
+body.adult-mode h1, 
+body.adult-mode h2, 
+body.adult-mode h3 {
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+body.adult-mode .text-accent {
+    color: var(--primary-color);
+}
