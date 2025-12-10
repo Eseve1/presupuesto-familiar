@@ -1,230 +1,146 @@
-// Firebase Configuration and App Initialization
-const firebaseConfig = {
-    apiKey: "AIzaSyAIqzMwqJ8hI-9AWFfWYLBHEa2kxmkEZk4",
-    authDomain: "presupuestofamiliar-b290f.firebaseapp.com",
-    projectId: "presupuestofamiliar-b290f",
-    storageBucket: "presupuestofamiliar-b290f.firebasestorage.app",
-    messagingSenderId: "909741248494",
-    appId: "1:909741248494:web:476c410df0ce06b80488ff"
-};
+// app.js - Versión mejorada: validación, manejo de errores, Firestore optimizado
+// Requiere: firebase inicializado en firebase-config.js y elemento #mensajes en HTML
 
-// Initialize Firebase
-let app, auth, db;
-let currentUser = null;
-let currentUserData = null;
+const db = firebase.firestore();
+const auth = firebase.auth();
 
-try {
-    app = firebase.initializeApp(firebaseConfig);
-    auth = firebase.auth();
-    db = firebase.firestore();
-    console.log('Firebase initialized successfully');
-} catch (error) {
-    console.error('Error initializing Firebase:', error);
+/* ---------- Helpers ---------- */
+function mostrarMensaje(texto, tipo = "info") {
+  const cont = document.getElementById("mensajes");
+  if (cont) {
+    cont.innerText = texto;
+    cont.className = `msg ${tipo}`;
+    setTimeout(() => { cont.innerText = ""; cont.className = ""; }, 3500);
+  } else {
+    console[type === "error" ? "error" : "log"](texto);
+  }
 }
 
-// Current month helper
-function getCurrentMonth() {
-    const now = new Date();
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+function esFechaValida(fecha) {
+  const d = new Date(fecha);
+  return !isNaN(d.getTime());
 }
 
-// Currency formatter
-function formatCurrency(amount) {
-    return `Bs. ${parseFloat(amount).toLocaleString('es-BO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+/* ---------- Validaciones ---------- */
+function validarTransaccion(nombre, monto, fecha) {
+  if (!nombre || String(nombre).trim() === "") return "Nombre obligatorio";
+  monto = Number(monto);
+  if (!Number.isFinite(monto) || monto <= 0) return "Monto inválido";
+  if (!fecha || !esFechaValida(fecha)) return "Fecha inválida";
+  return null;
 }
 
-// Show toast notification
-function showToast(message, type = 'success') {
-    const toast = document.createElement('div');
-    toast.className = `toast ${type}`;
-    toast.innerHTML = `
-        <div class="flex items-center space-x-3">
-            <span class="text-xl">${type === 'success' ? '✅' : type === 'error' ? '❌' : '⚠️'}</span>
-            <p class="text-gray-800">${message}</p>
-        </div>
-    `;
-    document.body.appendChild(toast);
-    
-    setTimeout(() => {
-        toast.style.opacity = '0';
-        setTimeout(() => toast.remove(), 300);
-    }, 3000);
+/* ---------- Cálculo 50/30/20 ---------- */
+function calcularPresupuesto(ingresoTotal) {
+  ingresoTotal = Number(ingresoTotal);
+  if (!Number.isFinite(ingresoTotal) || ingresoTotal <= 0) return null;
+  return {
+    necesidades: Math.round(ingresoTotal * 0.5),
+    deseos: Math.round(ingresoTotal * 0.3),
+    ahorro: Math.round(ingresoTotal * 0.2)
+  };
 }
 
-// Show/Hide Loading Overlay
-function showLoading() {
-    const overlay = document.getElementById('loadingOverlay');
-    if (overlay) {
-        overlay.classList.remove('hidden');
+/* ---------- Firestore: paths y helpers ---------- */
+function refUsuario(uid) {
+  return db.collection("usuarios").doc(uid);
+}
+function refSobres(uid) {
+  return refUsuario(uid).collection("sobres");
+}
+function refTransacciones(uid, sobreId) {
+  return refSobres(uid).doc(sobreId).collection("transacciones");
+}
+
+/* ---------- CRUD Sobres ---------- */
+async function crearSobre(uid, nombre, presupuesto = 0) {
+  if (!uid) throw new Error("Usuario no autenticado");
+  if (!nombre || !nombre.trim()) throw new Error("Nombre de sobre obligatorio");
+  const data = { nombre: nombre.trim(), presupuesto: Number(presupuesto) || 0, createdAt: firebase.firestore.FieldValue.serverTimestamp() };
+  const docRef = await refSobres(uid).add(data);
+  return docRef.id;
+}
+
+async function editarSobre(uid, sobreId, datos) {
+  if (!uid) throw new Error("Usuario no autenticado");
+  await refSobres(uid).doc(sobreId).update({ ...datos, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+}
+
+async function eliminarSobre(uid, sobreId) {
+  if (!uid) throw new Error("Usuario no autenticado");
+  // eliminar transacciones primero (batch)
+  const txCol = refTransacciones(uid, sobreId);
+  const snap = await txCol.get();
+  const batch = db.batch();
+  snap.docs.forEach(d => batch.delete(d.ref));
+  batch.delete(refSobres(uid).doc(sobreId));
+  await batch.commit();
+}
+
+/* ---------- CRUD Transacciones ---------- */
+async function agregarTransaccion(uid, sobreId, nombre, monto, fecha, tipo = "gasto") {
+  if (!uid) throw new Error("Usuario no autenticado");
+  const err = validarTransaccion(nombre, monto, fecha);
+  if (err) throw new Error(err);
+  const doc = {
+    nombre: nombre.trim(),
+    monto: Number(monto),
+    fecha: firebase.firestore.Timestamp.fromDate(new Date(fecha)),
+    tipo,
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  };
+  const docRef = await refTransacciones(uid, sobreId).add(doc);
+  return docRef.id;
+}
+
+async function obtenerTransacciones(uid, sobreId, limit = 100) {
+  if (!uid) throw new Error("Usuario no autenticado");
+  const snapshot = await refTransacciones(uid, sobreId).orderBy("fecha", "desc").limit(limit).get();
+  return snapshot.docs.map(d => ({ id: d.id, ...d.data(), fecha: d.data().fecha?.toDate?.() || d.data().fecha }));
+}
+
+/* ---------- Lectura optimizada: cargar todo de una vez ---------- */
+async function cargarDatosUsuario(uid) {
+  if (!uid) throw new Error("Usuario no autenticado");
+  const sobresSnap = await refSobres(uid).orderBy("createdAt", "asc").get();
+  const sobres = [];
+  for (const s of sobresSnap.docs) {
+    const sobre = { id: s.id, ...s.data() };
+    // opcional: cargar últimas 10 transacciones por sobre
+    const txSnap = await refTransacciones(uid, s.id).orderBy("fecha", "desc").limit(10).get();
+    sobre.transacciones = txSnap.docs.map(d => ({ id: d.id, ...d.data(), fecha: d.data().fecha?.toDate?.() || d.data().fecha }));
+    sobres.push(sobre);
+  }
+  return { sobres };
+}
+
+/* ---------- Manejo Auth (listeners) ---------- */
+auth.onAuthStateChanged(async user => {
+  if (user) {
+    try {
+      const datos = await cargarDatosUsuario(user.uid);
+      // función que actualiza UI con datos (definila en tu front)
+      actualizarUIConDatos(datos);
+    } catch (e) {
+      mostrarMensaje("Error cargando datos: " + e.message, "error");
     }
-}
-
-function hideLoading() {
-    const overlay = document.getElementById('loadingOverlay');
-    if (overlay) {
-        overlay.classList.add('hidden');
-    }
-}
-
-// Auth State Observer
-auth.onAuthStateChanged(async (user) => {
-    if (user) {
-        currentUser = user;
-        console.log('User logged in:', user.uid);
-        
-        // Load user data
-        try {
-            const userDoc = await db.collection('users').doc(user.uid).get();
-            if (userDoc.exists) {
-                currentUserData = userDoc.data();
-                
-                // Redirect to dashboard if on index page
-                if (window.location.pathname.endsWith('index.html') || window.location.pathname === '/' || window.location.pathname.endsWith('/')) {
-                    window.location.href = 'dashboard.html';
-                }
-            }
-        } catch (error) {
-            console.error('Error loading user data:', error);
-        }
-    } else {
-        currentUser = null;
-        currentUserData = null;
-        
-        // Redirect to login if on dashboard page
-        if (window.location.pathname.includes('dashboard.html')) {
-            window.location.href = 'index.html';
-        }
-    }
+  } else {
+    // mostrar pantalla de login
+    mostrarLogin();
+  }
 });
 
-// Initialize dashboard if on dashboard page
-if (window.location.pathname.includes('dashboard.html')) {
-    document.addEventListener('DOMContentLoaded', () => {
-        initializeDashboard();
-    });
+/* ---------- Ejemplo de uso seguro (invocado desde UI) ---------- */
+async function accionAgregarGasto(sobreId, nombre, monto, fecha) {
+  const user = auth.currentUser;
+  if (!user) return mostrarMensaje("Inicia sesión primero", "error");
+  try {
+    await agregarTransaccion(user.uid, sobreId, nombre, monto, fecha, "gasto");
+    mostrarMensaje("Gasto agregado");
+    // refrescar datos del sobre
+    const trans = await obtenerTransacciones(user.uid, sobreId, 20);
+    renderTransacciones(trans); // función UI
+  } catch (err) {
+    mostrarMensaje(err.message, "error");
+  }
 }
-
-async function initializeDashboard() {
-    showLoading();
-    
-    try {
-        // Wait for auth to be ready
-        await new Promise(resolve => {
-            const unsubscribe = auth.onAuthStateChanged(user => {
-                if (user) {
-                    unsubscribe();
-                    resolve();
-                }
-            });
-        });
-        
-        // Load user data
-        const userDoc = await db.collection('users').doc(currentUser.uid).get();
-        if (!userDoc.exists) {
-            throw new Error('User data not found');
-        }
-        
-        currentUserData = userDoc.data();
-        
-        // Update welcome message
-        const welcomeMsg = document.getElementById('userWelcome');
-        if (welcomeMsg) {
-            welcomeMsg.textContent = `Bienvenido, ${currentUserData.profile.name}`;
-        }
-        
-        // Check if user needs to select mode
-        if (!currentUserData.profile.mode) {
-            document.getElementById('modeSelectionModal').classList.remove('hidden');
-        } else {
-            // Apply theme
-            applyTheme(currentUserData.profile.mode);
-            
-            // Initialize dashboard components
-            await loadEnvelopes();
-            await loadTransactions();
-            updateDashboardSummary();
-            initializeChart();
-        }
-        
-        // Setup event listeners
-        setupDashboardEventListeners();
-        
-    } catch (error) {
-        console.error('Error initializing dashboard:', error);
-        showToast('Error al cargar el dashboard', 'error');
-    } finally {
-        hideLoading();
-    }
-}
-
-function applyTheme(mode) {
-    const body = document.body;
-    const themeStylesheet = document.getElementById('themeStylesheet');
-    
-    body.classList.remove('adult-mode', 'kids-mode');
-    body.classList.add(`${mode}-mode`);
-    
-    if (mode === 'kids') {
-        themeStylesheet.setAttribute('href', 'css/kids-theme.css');
-    } else {
-        themeStylesheet.setAttribute('href', 'css/adult-theme.css');
-    }
-}
-
-async function selectUserMode(mode) {
-    try {
-        showLoading();
-        
-        await db.collection('users').doc(currentUser.uid).update({
-            'profile.mode': mode
-        });
-        
-        currentUserData.profile.mode = mode;
-        
-        // Hide modal
-        document.getElementById('modeSelectionModal').classList.add('hidden');
-        
-        // Apply theme
-        applyTheme(mode);
-        
-        // Initialize dashboard
-        await loadEnvelopes();
-        await loadTransactions();
-        updateDashboardSummary();
-        initializeChart();
-        
-        showToast('Modo seleccionado correctamente', 'success');
-    } catch (error) {
-        console.error('Error selecting mode:', error);
-        showToast('Error al seleccionar modo', 'error');
-    } finally {
-        hideLoading();
-    }
-}
-
-function setupDashboardEventListeners() {
-    // Logout button
-    const logoutBtn = document.getElementById('logoutBtn');
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', async () => {
-            try {
-                await auth.signOut();
-                window.location.href = 'index.html';
-            } catch (error) {
-                console.error('Error signing out:', error);
-                showToast('Error al cerrar sesión', 'error');
-            }
-        });
-    }
-    
-    // Mode toggle button
-    const modeToggle = document.getElementById('modeToggle');
-    if (modeToggle) {
-        modeToggle.addEventListener('click', () => {
-            document.getElementById('modeSelectionModal').classList.remove('hidden');
-        });
-    }
-}
-
-// Make selectUserMode globally accessible
-window.selectUserMode = selectUserMode;
